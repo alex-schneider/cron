@@ -67,6 +67,26 @@ func getFlexValues(expr string, ft fieldType) ([]int, string, error) {
 		return nil, "", err
 	}
 
+	// `R`
+	if expr == "R" {
+		switch ft {
+		case typeSeconds:
+			fallthrough
+		case typeMinutes:
+			return []int{random.Intn(60)}, "", nil // Random 0-59
+		case typeHours:
+			return []int{random.Intn(24)}, "", nil // Random 0-23
+		case typeDoM:
+			return []int{tableValues[1:29][random.Intn(28)]}, "", nil // Random 1-28
+		case typeMonth:
+			return []int{tableValues[1:13][random.Intn(12)]}, "", nil // Random 1-12
+		case typeDoW:
+			return []int{random.Intn(6)}, "", nil // Random 0-6
+		case typeYear:
+			return []int{yearValues[random.Intn(130)]}, "", nil // Random 1970-2099
+		}
+	}
+
 	// `L`
 	if expr == "L" {
 		if ft == typeDoW {
@@ -118,6 +138,10 @@ func getFlexValues(expr string, ft fieldType) ([]int, string, error) {
 }
 
 func getFlexValuesError(expr string, ft fieldType) error {
+	if expr == "R" {
+		return nil
+	}
+
 	if ft != typeDoM && ft != typeDoW {
 		return fmt.Errorf("the special characters 'L', 'W', '?' and '#' are only allowed in the DoM and DoW fields")
 	} else if strings.Contains(expr, "W") && ft != typeDoM {
@@ -475,6 +499,7 @@ func getMinMax(ft fieldType) (int, int) {
 func isFlexValue(expr string) bool {
 	var flex bool
 
+	flex = flex || expr == "R"
 	flex = flex || expr == "L"
 	flex = flex || expr == "LW"
 	flex = flex || expr == "?"

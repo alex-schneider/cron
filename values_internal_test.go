@@ -80,6 +80,44 @@ func TestValues_getFixValues(t *testing.T) {
 	}
 }
 
+func TestValues_RandomValues(t *testing.T) {
+	type testCase struct {
+		expr   string
+		ft     fieldType
+		expMin int
+		expMax int
+	}
+
+	for i := 0; i < 1000; i++ {
+		for _, tc := range []testCase{
+			{"R", typeSeconds, 0, 59},
+			{"R", typeMinutes, 0, 59},
+			{"R", typeHours, 0, 23},
+			{"R", typeDoM, 1, 28},
+			{"R", typeMonth, 1, 12},
+			{"R", typeDoW, 0, 6},
+			{"R", typeYear, 1970, 2099},
+		} {
+			got, unit, err := getFlexValues(tc.expr, tc.ft)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got == nil {
+				t.Fatal("Unexpected NIL value given.")
+			}
+			if unit != "" {
+				t.Errorf("Unexpected unit given: %s", unit)
+			}
+
+			n := got[0]
+
+			if n < tc.expMin || n > tc.expMax {
+				t.Errorf("Unexpected value given: %d (allowed range: %d-%d)", n, tc.expMin, tc.expMax)
+			}
+		}
+	}
+}
+
 /* ==================================================================================================== */
 
 func TestValues_getWildcardValues(t *testing.T) {
