@@ -1,4 +1,4 @@
-// Copyright 2021 Alex Schneider. All rights reserved.
+// Copyright 2022 Alex Schneider. All rights reserved.
 
 package cron
 

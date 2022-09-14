@@ -1,4 +1,4 @@
-// Copyright 2021 Alex Schneider. All rights reserved.
+// Copyright 2022 Alex Schneider. All rights reserved.
 
 package cron
 
@@ -52,9 +52,10 @@ func (s *Schedule) deactivate() {
 // that is greater than the given reference time.
 //
 // A zero time value is returned if one of the following special cases is accured:
-//  * the given reference time is zero.
-//  * the expression is defined as `@reboot`.
-//  * no new time can be found for the next execution.
+//   - the given reference time is zero.
+//   - the expression is defined as `@reboot`.
+//   - no new time can be found for the next execution.
+//
 // The second return value notifies the caller about the accured case.
 func (s *Schedule) next(referenceTime time.Time) (time.Time, state) {
 	if referenceTime.IsZero() {
