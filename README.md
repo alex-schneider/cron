@@ -20,15 +20,15 @@ The current implementation completes the fields as following:
 * If only 6 fields are present, the `year` field with value `*` is added to the
   end of the fields list.
 
-| Field name | Required | Description               | Allowed values      | Allowed special characters      |
-| :--------- | :------: | :------------------------ | :------------------ | :------------------------------ |
-| `seconds`  | &#10005; | Represents seconds.       | `0-59`              | `,` `-` `*` `/` `.`             |
-| `minutes`  | &#10003; | Represents minutes.       | `0-59`              | `,` `-` `*` `/` `.`             |
-| `hours`    | &#10003; | Represents hours.         | `0-23`              | `,` `-` `*` `/` `.`             |
-| `dom`      | &#10003; | Represents days-of-month. | `1-31`              | `,` `-` `*` `/` `.` `?` `L` `W` |
-| `month`    | &#10003; | Represents months.        | `1-12` or `JAN-DEC` | `,` `-` `*` `/` `.`             |
-| `dow`      | &#10003; | Represents days-of-week.  | `0-7` or `SUN-SAT`  | `,` `-` `*` `/` `.` `?` `L` `#` |
-| `year`     | &#10005; | Represents years.         | `1970-2099`         | `,` `-` `*` `/` `.`             |
+| Field name | Required | Description               | Allowed values      | Allowed special characters          |
+| :--------- | :------: | :------------------------ | :------------------ | :---------------------------------- |
+| `seconds`  | &#10005; | Represents seconds.       | `0-59`              | `,` `-` `*` `/` `.` `R`             |
+| `minutes`  | &#10003; | Represents minutes.       | `0-59`              | `,` `-` `*` `/` `.` `R`             |
+| `hours`    | &#10003; | Represents hours.         | `0-23`              | `,` `-` `*` `/` `.` `R`             |
+| `dom`      | &#10003; | Represents days-of-month. | `1-31`              | `,` `-` `*` `/` `.` `R` `?` `L` `W` |
+| `month`    | &#10003; | Represents months.        | `1-12` or `JAN-DEC` | `,` `-` `*` `/` `.` `R`             |
+| `dow`      | &#10003; | Represents days-of-week.  | `0-7` or `SUN-SAT`  | `,` `-` `*` `/` `.` `R` `?` `L` `#` |
+| `year`     | &#10005; | Represents years.         | `1970-2099`         | `,` `-` `*` `/` `.` `R`             |
 
 ---
 
@@ -38,8 +38,8 @@ The current implementation completes the fields as following:
 ---
 
 > **Note:** The names in `month` and `dow` (days-of-week) fields and the special
- characters `L` and `W` are case insensitive. For example, `FRI` is the same as
- `Fri` or `fri`.
+ characters `R`, `L` and `W` are case insensitive. For example, `FRI` is the same
+ as `Fri` or `fri`.
 
 ---
 
@@ -53,6 +53,7 @@ The current implementation completes the fields as following:
 | `/`               | Slash can be used to specify frequencies. For example, `*/10` in the `seconds` field means `every 10 seconds`. And `10/15` in the `minutes` field means `the minutes 10, 25, 40 and 55`. |
 | `.`               | Dot can be used to specify the current date or time value on the startup. For example, `0 . . * * * *` would be updated to `0 9 15 * * * *` if the cron is started-up at 09:15. |
 | `?`               | Question mark is used for leaving either, `dom` (day-of-month) or `dow` (day-of-week) blank. For example, `0 0 0 15 * ? *` would trigger the cronjob at `15th` of every month regardless of what day-of-week it is. |
+| `R`               | `R` stands for `random`. Currently, `R` cannot be combined with other values. Once generated during parsing, the random number remains constant for current field. If used in the `dom` (day-of-month) field, the possible values are limited to the range `1-28`. |
 | `L`               | `L` stands for `last`. When this character is used in the `dom` (day-of-month) field, it specifies the last day of the month. For example, `31 January` or `29 February` in a leap year. In the `dow` (day-of-week) field, it specifies the last day of the week and simply means the `SAT` or `6`. When this character is used in the `dow` (day-of-week) field and is prefixed with a number, it means `the last X day of the month`. For example, `1L` means the `last Monday of the month`. `MONL` is the same as `1L`. |
 | `W`               | `W` stands for `weekday` (Monday-Friday). `W` is used to specify the business day nearest the given day in the given month. It never jumps over the boundary of the month's days. For example, if `1W` is a Saturday, the cronjob would trigger at Monday, the 3rd. The `L` and `W` special characters can also be combined in the `dom` (day-of-month) field as `LW`, which means `last weekday of the month`. |
 | `#`               | Hash allows to specifying constructs such as `the second Friday` of a given month. For example, `5#3` in the `dow` (day-of-week) field means `the third Friday of every month`. The value before the `#` has the range `0-7` or `SUN-SAT`. The value after the `#` has the range `1-5`. |
@@ -111,3 +112,4 @@ The current implementation completes the fields as following:
 | `0 0 0 ? * LW *`     | Run at every last business day on the month. |
 | `0 0 0 ? * 5L *`     | Run at every last Friday on the month.       |
 | `0 0 0 29 2 ? *`     | Run every February 29th on every leap year.  |
+| `0 0 R * * * *`      | Run once a day at a random hour.             |
