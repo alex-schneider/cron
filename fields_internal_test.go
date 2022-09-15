@@ -108,19 +108,23 @@ func TestFields_createFields(t *testing.T) {
 
 func TestFields_createField(t *testing.T) {
 	type testCase struct {
-		expr  string
-		ft    fieldType
-		field bool
-		err   string
+		expr      string
+		ft        fieldType
+		field     bool
+		expUnit   string
+		expValues []int
+		err       string
 	}
 
 	for _, tc := range []testCase{
-		{",", typeMinutes, false, `invalid expression in field 'minutes' given: ','`},
-		{"?,1", typeDoM, false, `invalid expression in field 'day-of-month' given: '?,1'`},
-		{"LW", typeDoW, false, `the special character 'W' is only allowed in the DoM field`},
-		{"32", typeDoM, false, `invalid value in field 'day-of-month' given: '32'`},
-		{"LW", typeDoM, true, ``},
-		{"1", typeDoM, true, ``},
+		{",", typeMinutes, false, "", nil, `invalid expression in field 'minutes' given: ','`},
+		{"?,1", typeDoM, false, "", nil, `invalid expression in field 'day-of-month' given: '?,1'`},
+		{"LW", typeDoW, false, "", nil, `the special character 'W' is only allowed in the DoM field`},
+		{"32", typeDoM, false, "", nil, `invalid value in field 'day-of-month' given: '32'`},
+		{"LW", typeDoM, true, "LW", nil, ``},
+		{"1", typeDoM, true, "", []int{1}, ``},
+		{"mon-3,5", typeDoW, true, "", []int{1, 2, 3, 5}, ``},
+		{"mon-3,5-7", typeDoW, true, "", []int{0, 1, 2, 3, 5, 6}, ``},
 	} {
 		field, err := createField(tc.expr, tc.ft)
 		if tc.field && field == nil {
@@ -132,6 +136,21 @@ func TestFields_createField(t *testing.T) {
 		if tc.err != "" || err != nil {
 			if eerr := fmt.Sprintf("%s", err); tc.err != eerr {
 				t.Errorf("'%#v': expected '%s', got '%s'", tc.expr, tc.err, eerr)
+			}
+		}
+
+		if field != nil {
+			if len(field.combinations) != 1 {
+				t.Fatalf("Unexpected field combinations given: %#v", field.combinations)
+			}
+
+			c := field.combinations[0]
+
+			if c.unit != tc.expUnit {
+				t.Errorf("'%#v': expected '%s', got '%s'", tc.expr, tc.expUnit, c.unit)
+			}
+			if !reflect.DeepEqual(tc.expValues, c.values) {
+				t.Errorf("'%s': expected '%#v', got '%#v'", tc.expr, tc.expValues, c.values)
 			}
 		}
 	}
