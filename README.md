@@ -1,5 +1,8 @@
 # The `cron` package
 
+[![cron](https://github.com/alex-schneider/cron/actions/workflows/go.yaml/badge.svg)](https://github.com/alex-schneider/cron/actions/workflows/go.yaml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/alex-schneider/cron)](https://goreportcard.com/report/github.com/alex-schneider/cron)
+
 The `cron` package implements a cron job scheduler with a lot of non-standard extensions.
 It allowes to run jobs periodically at fixed times, dates, frequencies and intervals.
 
