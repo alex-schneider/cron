@@ -80,7 +80,50 @@ func TestValues_getFixValues(t *testing.T) {
 	}
 }
 
-func TestValues_RandomValues(t *testing.T) {
+func TestValues_RandomFixValues(t *testing.T) {
+	type testCase struct {
+		expr   string
+		ft     fieldType
+		expMin int
+		expMax int
+		err    string
+	}
+
+	for i := 0; i < 1000; i++ {
+		for _, tc := range []testCase{
+			{"10-20/R", typeSeconds, 10, 20, ``},
+			{"30-59/R", typeMinutes, 30, 59, ``},
+			{"12-16/R", typeHours, 12, 16, ``},
+			{"1-28/R", typeDoM, 1, 28, ``},
+			{"29-31/R", typeDoM, 29, 31, ``},
+			{"1-6/R", typeMonth, 1, 6, ``},
+			{"3-5/R", typeDoW, 3, 5, ``},
+			{"2025-2030/R", typeYear, 2025, 2030, ``},
+			{"1-32/R", typeDoM, 0, 0, `invalid value in field 'day-of-month' given: '32'`},
+		} {
+			got, err := getFixValues(tc.expr, tc.ft)
+			if tc.err != "" || err != nil {
+				if eerr := fmt.Sprintf("%s", err); tc.err != eerr {
+					t.Errorf("'%s': expected '%s', got '%s'", tc.expr, tc.err, eerr)
+				}
+			}
+
+			if err == nil {
+				if len(got) != 1 {
+					t.Fatalf("Unexpected value given: %#v", got)
+				}
+
+				n := got[0]
+
+				if n < tc.expMin || n > tc.expMax {
+					t.Errorf("Unexpected value given: %d (allowed range: %d-%d)", n, tc.expMin, tc.expMax)
+				}
+			}
+		}
+	}
+}
+
+func TestValues_RandomFlexValues(t *testing.T) {
 	type testCase struct {
 		expr   string
 		ft     fieldType
@@ -102,8 +145,8 @@ func TestValues_RandomValues(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got == nil {
-				t.Fatal("Unexpected NIL value given.")
+			if len(got) != 1 {
+				t.Fatalf("Unexpected value given: %#v", got)
 			}
 			if unit != "" {
 				t.Errorf("Unexpected unit given: %s", unit)
@@ -324,7 +367,7 @@ func TestValues_getRangeValues(t *testing.T) {
 		{"2020", "2010", typeYear, nil, `invalid value in field 'year' given: '2020-2010'`},
 		{"2020", "2020", typeYear, []int{2020}, ``},
 	} {
-		got, err := getRangeValues(tc.v1, tc.v2, tc.ft)
+		got, err := getRangeValues(tc.v1, tc.v2, false, tc.ft)
 		if !reflect.DeepEqual(tc.exp, got) {
 			t.Errorf("'%s/%s': expected '%#v', got '%#v'", tc.v1, tc.v2, tc.exp, got)
 		}

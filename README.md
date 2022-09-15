@@ -53,7 +53,7 @@ The current implementation completes the fields as following:
 | `/`               | Slash can be used to specify frequencies. For example, `*/10` in the `seconds` field means `every 10 seconds`. And `10/15` in the `minutes` field means `the minutes 10, 25, 40 and 55`. |
 | `.`               | Dot can be used to specify the current date or time value on the startup. For example, `0 . . * * * *` would be updated to `0 9 15 * * * *` if the cron is started-up at 09:15. |
 | `?`               | Question mark is used for leaving either, `dom` (day-of-month) or `dow` (day-of-week) blank. For example, `0 0 0 15 * ? *` would trigger the cronjob at `15th` of every month regardless of what day-of-week it is. |
-| `R`               | `R` stands for `random`. Currently, `R` cannot be combined with other values. Once generated during parsing, the random number remains constant for current field. If used in the `dom` (day-of-month) field, the possible values are limited to the range `1-28`. |
+| `R`               | `R` stands for `random`. `R` can be combined with ranges, e.g. `10-30/R` in the `minutes` field. Once generated during parsing, the random number remains constant for current field. If used in the `dom` (day-of-month) field without ranges, the possible values are limited to the range `1-28`. To be able to use the total range set `1-31/R` to the `dom` (day-of-month) field. |
 | `L`               | `L` stands for `last`. When this character is used in the `dom` (day-of-month) field, it specifies the last day of the month. For example, `31 January` or `29 February` in a leap year. In the `dow` (day-of-week) field, it specifies the last day of the week and simply means the `SAT` or `6`. When this character is used in the `dow` (day-of-week) field and is prefixed with a number, it means `the last X day of the month`. For example, `1L` means the `last Monday of the month`. `MONL` is the same as `1L`. |
 | `W`               | `W` stands for `weekday` (Monday-Friday). `W` is used to specify the business day nearest the given day in the given month. It never jumps over the boundary of the month's days. For example, if `1W` is a Saturday, the cronjob would trigger at Monday, the 3rd. The `L` and `W` special characters can also be combined in the `dom` (day-of-month) field as `LW`, which means `last weekday of the month`. |
 | `#`               | Hash allows to specifying constructs such as `the second Friday` of a given month. For example, `5#3` in the `dow` (day-of-week) field means `the third Friday of every month`. The value before the `#` has the range `0-7` or `SUN-SAT`. The value after the `#` has the range `1-5`. |
@@ -105,11 +105,12 @@ The current implementation completes the fields as following:
 
 ## Examples
 
-| Expression           | Description                                  |
-| :------------------- | :------------------------------------------- |
-| `0 11 11 11 11 ? *`  | Run every November 11th at 11:11am.          |
-| `59 59 23 31 12 ? *` | Run at every turn of the year.               |
-| `0 0 0 ? * LW *`     | Run at every last business day on the month. |
-| `0 0 0 ? * 5L *`     | Run at every last Friday on the month.       |
-| `0 0 0 29 2 ? *`     | Run every February 29th on every leap year.  |
-| `0 0 R * * * *`      | Run once a day at a random hour.             |
+| Expression           | Description                                                |
+| :------------------- | :--------------------------------------------------------- |
+| `0 11 11 11 11 ? *`  | Run every November 11th at 11:11am.                        |
+| `59 59 23 31 12 ? *` | Run at every turn of the year.                             |
+| `0 0 0 ? * LW *`     | Run at every last business day on the month.               |
+| `0 0 0 ? * 5L *`     | Run at every last Friday on the month.                     |
+| `0 0 0 29 2 ? *`     | Run every February 29th on every leap year.                |
+| `0 0 R * * * *`      | Run once a day at a random hour.                           |
+| `0 0 2-6/R * * * *`  | Run once a day at a random hour between 2:00am and 6:00am. |

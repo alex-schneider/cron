@@ -55,6 +55,7 @@ var (
 	reDoWInSpecificWeek        = regexp.MustCompile(`^([0-7]|` + dowList + `)#([1-5])$`)
 	reSingleValue              = regexp.MustCompile(`^` + listRegex + `$`)
 	reRangeValue               = regexp.MustCompile(`^` + listRegex + `-` + listRegex + `$`)
+	reRangeRandomValue         = regexp.MustCompile(`^` + listRegex + `-` + listRegex + `/R$`)
 	reWildcardIntervalValue    = regexp.MustCompile(`^\*/(\d+)$`)
 	reSingleValueIntervalValue = regexp.MustCompile(`^` + listRegex + `/(\d+)$`)
 	reRangeIntervalValue       = regexp.MustCompile(`^` + listRegex + `-` + listRegex + `/(\d+)$`)
@@ -171,7 +172,12 @@ func getFixValues(expr string, ft fieldType) ([]int, error) {
 
 	// `3-5`, `APR-JUL`, `2020-2035`, `MON-5` (eq. `MON-FRI`)
 	if matches := reRangeValue.FindStringSubmatch(expr); len(matches) == 3 {
-		return getRangeValues(matches[1], matches[2], ft)
+		return getRangeValues(matches[1], matches[2], false, ft)
+	}
+
+	// `3-5/R`, `APR-JUL/R`, `2020-2035/R`, `MON-5/R` (eq. `MON-FRI/R`)
+	if matches := reRangeRandomValue.FindStringSubmatch(expr); len(matches) == 3 {
+		return getRangeValues(matches[1], matches[2], true, ft)
 	}
 
 	// `*/5`
@@ -336,7 +342,7 @@ func getSingleValueFromDate(
 	return nil, fmt.Errorf("unsupported fieldType given: '%s'", ft)
 }
 
-func getRangeValues(v1, v2 string, ft fieldType) ([]int, error) {
+func getRangeValues(v1, v2 string, isRandom bool, ft fieldType) ([]int, error) {
 	numVal1, err := getSingleValue(v1, ft)
 	if err != nil {
 		return nil, err
@@ -366,6 +372,10 @@ func getRangeValues(v1, v2 string, ft fieldType) ([]int, error) {
 		for i := numVal1[0]; i <= numVal2[0]; i++ {
 			values = append(values, i)
 		}
+	}
+
+	if isRandom {
+		values = []int{values[random.Intn(len(values))]}
 	}
 
 	return values, nil
