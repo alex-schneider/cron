@@ -70,22 +70,7 @@ func getFlexValues(expr string, ft fieldType) ([]int, string, error) {
 
 	// `R`
 	if expr == "R" {
-		switch ft {
-		case typeSeconds:
-			fallthrough
-		case typeMinutes:
-			return []int{random.Intn(60)}, "", nil // Random 0-59
-		case typeHours:
-			return []int{random.Intn(24)}, "", nil // Random 0-23
-		case typeDoM:
-			return []int{tableValues[1:29][random.Intn(28)]}, "", nil // Random 1-28
-		case typeMonth:
-			return []int{tableValues[1:13][random.Intn(12)]}, "", nil // Random 1-12
-		case typeDoW:
-			return []int{random.Intn(6)}, "", nil // Random 0-6
-		case typeYear:
-			return []int{yearValues[random.Intn(130)]}, "", nil // Random 1970-2099
-		}
+		return getRandomValues(ft), "", nil
 	}
 
 	// `L`
@@ -196,6 +181,28 @@ func getFixValues(expr string, ft fieldType) ([]int, error) {
 	}
 
 	return errValue(expr, ft)
+}
+
+func getRandomValues(ft fieldType) []int {
+	switch ft {
+	case typeSeconds:
+		fallthrough
+	case typeMinutes:
+		return []int{random.Intn(60)} // Random 0-59
+	case typeHours:
+		return []int{random.Intn(24)} // Random 0-23
+	case typeDoM:
+		return []int{tableValues[1:29][random.Intn(28)]} // Random 1-28
+	case typeMonth:
+		return []int{tableValues[1:13][random.Intn(12)]} // Random 1-12
+	case typeDoW:
+		return []int{random.Intn(6)} // Random 0-6
+	case typeYear:
+		return []int{yearValues[random.Intn(130)]} // Random 1970-2099
+	}
+
+	// Code cannot be reached in the production code...
+	return nil
 }
 
 func errValue(value string, ft fieldType) ([]int, error) {
