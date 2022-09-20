@@ -6,8 +6,6 @@ import (
 	crand "crypto/rand"
 	"encoding/binary"
 	mrand "math/rand"
-
-	"github.com/sirupsen/logrus"
 )
 
 /* ==================================================================================================== */
@@ -25,7 +23,7 @@ func (s randomSource) Int63() int64 {
 func (s randomSource) uint64() (data uint64) {
 	err := binary.Read(crand.Reader, binary.BigEndian, &data)
 	if err != nil {
-		logrus.Error(err)
+		panic(err)
 	}
 
 	return data
