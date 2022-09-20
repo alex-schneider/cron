@@ -12,24 +12,6 @@ var testScheduleTime = time.Date(2022, 12, 31, 23, 59, 59, 0, startupTime.Locati
 
 /* ==================================================================================================== */
 
-func TestSchedule_Bind(t *testing.T) {
-	s := &Schedule{}
-	if s.command != "" {
-		t.Errorf("unexpected command given: '%#v'", s.command)
-	}
-	if len(s.args) != 0 {
-		t.Errorf("unexpected args given: '%#v'", s.args)
-	}
-
-	s.Bind("command arg1 arg2")
-	if s.command != "command" {
-		t.Errorf("expected '%#v', got '%#v'", "command", s.command)
-	}
-	if !reflect.DeepEqual(s.args, []string{"arg1", "arg2"}) {
-		t.Errorf("expected '%#v', got '%#v'", []string{"arg1", "arg2"}, s.args)
-	}
-}
-
 func TestSchedule_Next(t *testing.T) {
 	type testCase struct {
 		expr    string
@@ -50,7 +32,7 @@ func TestSchedule_Next(t *testing.T) {
 			``,
 		},
 	} {
-		s, err := Parse(tc.expr)
+		s, err := createTestScheduler(tc.expr)
 		if err != nil {
 			t.Errorf("'%s': unexpected error: %#v", tc.expr, err)
 		}
@@ -66,21 +48,29 @@ func TestSchedule_Next(t *testing.T) {
 	}
 }
 
-/* ==================================================================================================== */
+// func TestSchedule_Run(t *testing.T) {
+// 	s, err := createTestScheduler("* * * * * * 2021")
+// 	if err != nil {
+// 		t.Errorf("'Unexpected error: %#v", err)
+// 	}
 
-func TestSchedule_deactivate(t *testing.T) {
-	s := &Schedule{}
+// 	// ctx, cancelFn := context.WithCancel()
+// 	// defer cancelFn()
 
-	if s.deaktivated {
-		t.Error("schedule has not be deaktivated initially")
-	}
+// 	s.ctx = context.TODO()
+// 	s.jobCh = make(chan *Job)
 
-	s.deactivate()
+// 	go s.run()
 
-	if !s.deaktivated {
-		t.Error("schedule has to be deaktivated now")
-	}
-}
+// 	for {
+// 		select {
+// 		case job := <-s.jobCh:
+// 			t.Errorf("%#v", job)
+// 		default:
+
+// 		}
+// 	}
+// }
 
 /* ==================================================================================================== */
 
@@ -101,7 +91,7 @@ func TestSchedule_fromNextBestYear(t *testing.T) {
 			time.Date(2023, 1, 1, 1, 1, 1, 0, startupTime.Location()),
 		},
 	} {
-		s, err := Parse(tc.expr)
+		s, err := createTestScheduler(tc.expr)
 		if err != nil {
 			t.Errorf("'%s': unexpected error: %#v", tc.expr, err)
 		}
@@ -140,7 +130,7 @@ func TestSchedule_fromNextBestMonth(t *testing.T) {
 			time.Date(2023, 12, 1, 1, 1, 1, 0, startupTime.Location()),
 		},
 	} {
-		s, err := Parse(tc.expr)
+		s, err := createTestScheduler(tc.expr)
 		if err != nil {
 			t.Errorf("'%s': unexpected error: %#v", tc.expr, err)
 		}
@@ -191,7 +181,7 @@ func TestSchedule_fromNextBestDay(t *testing.T) {
 			time.Date(2022, 12, 30, 1, 1, 1, 0, startupTime.Location()),
 		},
 	} {
-		s, err := Parse(tc.expr)
+		s, err := createTestScheduler(tc.expr)
 		if err != nil {
 			t.Errorf("'%s': unexpected error: %#v", tc.expr, err)
 		}
@@ -230,7 +220,7 @@ func TestSchedule_fromNextBestHour(t *testing.T) {
 			time.Date(2022, 12, 15, 3, 1, 1, 0, startupTime.Location()),
 		},
 	} {
-		s, err := Parse(tc.expr)
+		s, err := createTestScheduler(tc.expr)
 		if err != nil {
 			t.Errorf("'%s': unexpected error: %#v", tc.expr, err)
 		}
@@ -269,7 +259,7 @@ func TestSchedule_fromNextBestMinute(t *testing.T) {
 			time.Date(2022, 12, 15, 1, 5, 1, 0, startupTime.Location()),
 		},
 	} {
-		s, err := Parse(tc.expr)
+		s, err := createTestScheduler(tc.expr)
 		if err != nil {
 			t.Errorf("'%s': unexpected error: %#v", tc.expr, err)
 		}
@@ -308,7 +298,7 @@ func TestSchedule_fromNextBestSecond(t *testing.T) {
 			time.Date(2022, 12, 15, 1, 2, 50, 0, startupTime.Location()),
 		},
 	} {
-		s, err := Parse(tc.expr)
+		s, err := createTestScheduler(tc.expr)
 		if err != nil {
 			t.Errorf("'%s': unexpected error: %#v", tc.expr, err)
 		}
@@ -325,10 +315,6 @@ func TestSchedule_fromNextBestSecond(t *testing.T) {
 }
 
 /* ==================================================================================================== */
-
-func TestSchedule_getDaysValues(t *testing.T) {
-
-}
 
 func TestSchedule_getDaysValuesFromDoM(t *testing.T) {
 	type testCase struct {
@@ -350,7 +336,7 @@ func TestSchedule_getDaysValuesFromDoM(t *testing.T) {
 		{"1 1 1 10,20,25 1 ? 2022", testScheduleTime, []int{10, 20, 25}},
 		{"1 1 1 ? 1 0 2022", testScheduleTime, []int{4, 11, 18, 25}}, // From DoW
 	} {
-		s, err := Parse(tc.expr)
+		s, err := createTestScheduler(tc.expr)
 		if err != nil {
 			t.Errorf("'%s': unexpected error: %#v", tc.expr, err)
 		}
@@ -376,7 +362,7 @@ func TestSchedule_getDaysValuesFromDoW(t *testing.T) {
 		{"1 1 1 ? 1 6#5 2022", time.Date(2021, 12, 15, 1, 2, 1, 0, startupTime.Location()), nil},
 		{"1 1 1 1 1 ? 2022", testScheduleTime, []int{1}}, // From DoM
 	} {
-		s, err := Parse(tc.expr)
+		s, err := createTestScheduler(tc.expr)
 		if err != nil {
 			t.Errorf("'%s': unexpected error: %#v", tc.expr, err)
 		}
@@ -424,4 +410,19 @@ func TestSchedule_expressionFromMacro(t *testing.T) {
 			}
 		}
 	}
+}
+
+/* ==================================================================================================== */
+
+func createTestScheduler(expression string) (*Schedule, error) {
+	fields, err := getFields(expression)
+	if err != nil {
+		return nil, err
+	}
+
+	s := &Schedule{
+		fields: fields,
+	}
+
+	return s, nil
 }

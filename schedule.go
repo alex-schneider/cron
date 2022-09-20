@@ -5,48 +5,50 @@ package cron
 import (
 	"context"
 	"fmt"
-	"os/exec"
-	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
+
+// Job communicates job-related information to the recipient.
+type Job struct {
+	// Next contains the time for the next cronjob execution
+	// or time.Zero if cronjob has finished.
+	Next time.Time
+
+	// State contains the current cronjob state.
+	State int
+}
 
 // Schedule represents the <cron.Schedule> object.
 type Schedule struct {
-	args        []string
-	command     string
-	deaktivated bool
-	fields      *fields
+	ctx    context.Context
+	fields *fields
+	jobCh  chan *Job
 }
 
 /* ==================================================================================================== */
 
-// Bind binds a command to the scheduler.
-func (s *Schedule) Bind(command string) *Schedule {
-	parts := reFieldsMatcher.FindAllString(command, -1)
-
-	s.command = parts[0]
-	if len(parts) > 1 {
-		s.args = parts[1:]
+// NewJobCh parses the given expression spec and
+// returns a new communication read only channel.
+func NewJobCh(ctx context.Context, expression string) (<-chan *Job, error) {
+	fields, err := getFields(expression)
+	if err != nil {
+		return nil, err
 	}
 
-	return s
-}
+	s := &Schedule{
+		ctx:    ctx,
+		fields: fields,
+		jobCh:  make(chan *Job),
+	}
 
-// Run starts the execution of a job.
-func (s *Schedule) Run(ctx context.Context, doneCh <-chan struct{}, logger logrus.FieldLogger) {
-	go s.run(ctx, doneCh, logger)
+	go s.run()
+
+	return s.jobCh, nil
 }
 
 /* ==================================================================================================== */
-
-// deactivate deactivates the execution of a job with the `@reboot` expression.
-func (s *Schedule) deactivate() {
-	s.deaktivated = true
-}
 
 // next calculates the <time.Time> for the next execution of the <cron.Schedule>,
 // that is greater than the given reference time.
@@ -69,32 +71,22 @@ func (s *Schedule) next(referenceTime time.Time) (time.Time, state) {
 	return s.fromNextBestYear(referenceTime)
 }
 
-func (s *Schedule) run(ctx context.Context, doneCh <-chan struct{}, logger logrus.FieldLogger) {
+func (s *Schedule) run() {
 	var ticker *time.Ticker
 
 	defer func() {
-		if rec := recover(); rec != nil {
-			logger.WithField("panic", string(debug.Stack())).Panic(rec)
-		}
-
 		if ticker != nil {
 			ticker.Stop()
 		}
+
+		close(s.jobCh)
 	}()
 
-	if s.fields.once && !s.deaktivated {
-		s.deactivate()
-
-		go func() {
-			err := exec.CommandContext(ctx, s.command, s.args...).Run()
-			if err != nil {
-				if e, ok := err.(*exec.ExitError); ok {
-					logger.Errorf("Cronjob finishes with error: %v", e)
-				}
-			}
-		}()
-
-		logger.Debug("Cronjob finishes (once)")
+	// @reboot case.
+	if s.fields.once {
+		s.jobCh <- &Job{
+			State: int(StateOnceExec),
+		}
 
 		return
 	}
@@ -106,33 +98,22 @@ func (s *Schedule) run(ctx context.Context, doneCh <-chan struct{}, logger logru
 
 		for {
 			select {
-			case <-doneCh:
-				ticker.Stop()
-
-				logger.Debug("Context done")
+			case <-s.ctx.Done():
 				return
 			case now := <-ticker.C:
-				ticker.Stop()
-
-				logger.Debug("Cronjob runs")
-
 				next, state = s.next(now)
 				if state != StateFound {
-					logger.Debugf("Cronjob finishes with state '%s'", state)
+					s.jobCh <- &Job{
+						State: int(StateNoMatches),
+					}
 
 					return
 				}
 
-				ticker = time.NewTicker(next.Sub(now))
-
-				go func() {
-					err := exec.CommandContext(ctx, s.command, s.args...).Run()
-					if err != nil {
-						if e, ok := err.(*exec.ExitError); ok {
-							logger.Errorf("Cronjob runs with error: %v", e)
-						}
-					}
-				}()
+				s.jobCh <- &Job{
+					Next:  next,
+					State: int(StateFound),
+				}
 			}
 		}
 	}
