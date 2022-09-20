@@ -13,7 +13,7 @@ const (
 	StateZeroTime
 )
 
-// State represents an accured case while the execution of the <cron.Next> method.
+// State represents an accured case while the execution of the <cron.next> method.
 type state int
 
 // String implements the <fmt.Stringer> interface.

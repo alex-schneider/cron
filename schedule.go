@@ -43,7 +43,12 @@ func NewJobCh(ctx context.Context, expression string) (<-chan *Job, error) {
 		jobCh:  make(chan *Job),
 	}
 
-	go s.run()
+	// To be able to override in tests.
+	nowFn := func() time.Time {
+		return time.Now()
+	}
+
+	go s.run(nowFn)
 
 	return s.jobCh, nil
 }
@@ -71,7 +76,7 @@ func (s *schedule) next(referenceTime time.Time) (time.Time, state) {
 	return s.fromNextBestYear(referenceTime)
 }
 
-func (s *schedule) run() {
+func (s *schedule) run(nowFn func() time.Time) {
 	var ticker *time.Ticker
 
 	defer func() {
@@ -91,7 +96,7 @@ func (s *schedule) run() {
 		return
 	}
 
-	now := time.Now()
+	now := nowFn()
 	next, state := s.next(now)
 	if state == StateFound {
 		ticker = time.NewTicker(next.Sub(now))

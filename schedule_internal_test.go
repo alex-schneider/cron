@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -48,29 +49,41 @@ func TestSchedule_Next(t *testing.T) {
 	}
 }
 
-// func TestSchedule_Run(t *testing.T) {
-// 	s, err := createTestScheduler("* * * * * * 2021")
-// 	if err != nil {
-// 		t.Errorf("'Unexpected error: %#v", err)
-// 	}
+func TestSchedule_Run(t *testing.T) {
+	s, err := createTestScheduler("* * * * * * 1970")
+	if err != nil {
+		t.Errorf("'Unexpected error: %#v", err)
+	}
 
-// 	// ctx, cancelFn := context.WithCancel()
-// 	// defer cancelFn()
+	s.ctx = context.TODO()
+	s.jobCh = make(chan *Job)
 
-// 	s.ctx = context.TODO()
-// 	s.jobCh = make(chan *Job)
+	nowFn := func() time.Time {
+		return time.Date(1970, 12, 31, 23, 59, 58, 0, startupTime.Location())
+	}
 
-// 	go s.run()
+	go s.run(nowFn)
 
-// 	for {
-// 		select {
-// 		case job := <-s.jobCh:
-// 			t.Errorf("%#v", job)
-// 		default:
+	var i int
 
-// 		}
-// 	}
-// }
+testLoop:
+	for {
+		select {
+		case job := <-s.jobCh:
+			if i == 0 && job.State != int(StateNoMatches) {
+				t.Errorf("Unexpected state: %#v", job.State)
+			}
+
+			i++
+
+			if i >= 1 {
+				break testLoop
+			}
+		case <-s.ctx.Done():
+			t.Errorf("Unexpected 'ctx.Done()'")
+		}
+	}
+}
 
 /* ==================================================================================================== */
 
