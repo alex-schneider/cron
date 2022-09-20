@@ -414,13 +414,13 @@ func TestSchedule_expressionFromMacro(t *testing.T) {
 
 /* ==================================================================================================== */
 
-func createTestScheduler(expression string) (*Schedule, error) {
+func createTestScheduler(expression string) (*schedule, error) {
 	fields, err := getFields(expression)
 	if err != nil {
 		return nil, err
 	}
 
-	s := &Schedule{
+	s := &schedule{
 		fields: fields,
 	}
 

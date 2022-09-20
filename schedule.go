@@ -20,8 +20,8 @@ type Job struct {
 	State int
 }
 
-// Schedule represents the <cron.Schedule> object.
-type Schedule struct {
+// schedule represents the <cron.schedule> object.
+type schedule struct {
 	ctx    context.Context
 	fields *fields
 	jobCh  chan *Job
@@ -37,7 +37,7 @@ func NewJobCh(ctx context.Context, expression string) (<-chan *Job, error) {
 		return nil, err
 	}
 
-	s := &Schedule{
+	s := &schedule{
 		ctx:    ctx,
 		fields: fields,
 		jobCh:  make(chan *Job),
@@ -50,7 +50,7 @@ func NewJobCh(ctx context.Context, expression string) (<-chan *Job, error) {
 
 /* ==================================================================================================== */
 
-// next calculates the <time.Time> for the next execution of the <cron.Schedule>,
+// next calculates the <time.Time> for the next execution of the <cron.schedule>,
 // that is greater than the given reference time.
 //
 // A zero time value is returned if one of the following special cases is accured:
@@ -59,7 +59,7 @@ func NewJobCh(ctx context.Context, expression string) (<-chan *Job, error) {
 //   - no new time can be found for the next execution.
 //
 // The second return value notifies the caller about the accured case.
-func (s *Schedule) next(referenceTime time.Time) (time.Time, state) {
+func (s *schedule) next(referenceTime time.Time) (time.Time, state) {
 	if referenceTime.IsZero() {
 		return time.Time{}, StateZeroTime
 	} else if s.fields.once {
@@ -71,7 +71,7 @@ func (s *Schedule) next(referenceTime time.Time) (time.Time, state) {
 	return s.fromNextBestYear(referenceTime)
 }
 
-func (s *Schedule) run() {
+func (s *schedule) run() {
 	var ticker *time.Ticker
 
 	defer func() {
@@ -121,7 +121,7 @@ func (s *Schedule) run() {
 
 /* ==================================================================================================== */
 
-func (s *Schedule) fromNextBestYear(referenceTime time.Time) (time.Time, state) {
+func (s *schedule) fromNextBestYear(referenceTime time.Time) (time.Time, state) {
 	values := s.fields.year.combinations[0].values
 
 	i := sort.SearchInts(values, referenceTime.Year())
@@ -145,7 +145,7 @@ func (s *Schedule) fromNextBestYear(referenceTime time.Time) (time.Time, state) 
 	return s.fromNextBestMonth(referenceTime)
 }
 
-func (s *Schedule) fromNextBestMonth(referenceTime time.Time) (time.Time, state) {
+func (s *schedule) fromNextBestMonth(referenceTime time.Time) (time.Time, state) {
 	values := s.fields.month.combinations[0].values
 
 	i := sort.SearchInts(values, int(referenceTime.Month()))
@@ -178,7 +178,7 @@ func (s *Schedule) fromNextBestMonth(referenceTime time.Time) (time.Time, state)
 	return s.fromNextBestDay(referenceTime)
 }
 
-func (s *Schedule) fromNextBestDay(referenceTime time.Time) (time.Time, state) {
+func (s *schedule) fromNextBestDay(referenceTime time.Time) (time.Time, state) {
 	values := s.getDaysValues(referenceTime)
 
 	i := sort.SearchInts(values, referenceTime.Day())
@@ -213,7 +213,7 @@ func (s *Schedule) fromNextBestDay(referenceTime time.Time) (time.Time, state) {
 	return s.fromNextBestHour(referenceTime)
 }
 
-func (s *Schedule) fromNextBestHour(referenceTime time.Time) (time.Time, state) {
+func (s *schedule) fromNextBestHour(referenceTime time.Time) (time.Time, state) {
 	values := s.fields.hours.combinations[0].values
 
 	i := sort.SearchInts(values, referenceTime.Hour())
@@ -248,7 +248,7 @@ func (s *Schedule) fromNextBestHour(referenceTime time.Time) (time.Time, state) 
 	return s.fromNextBestMinute(referenceTime)
 }
 
-func (s *Schedule) fromNextBestMinute(referenceTime time.Time) (time.Time, state) {
+func (s *schedule) fromNextBestMinute(referenceTime time.Time) (time.Time, state) {
 	values := s.fields.minutes.combinations[0].values
 
 	i := sort.SearchInts(values, referenceTime.Minute())
@@ -283,7 +283,7 @@ func (s *Schedule) fromNextBestMinute(referenceTime time.Time) (time.Time, state
 	return s.fromNextBestSecond(referenceTime)
 }
 
-func (s *Schedule) fromNextBestSecond(referenceTime time.Time) (time.Time, state) {
+func (s *schedule) fromNextBestSecond(referenceTime time.Time) (time.Time, state) {
 	values := s.fields.seconds.combinations[0].values
 
 	i := sort.SearchInts(values, referenceTime.Second())
@@ -309,7 +309,7 @@ func (s *Schedule) fromNextBestSecond(referenceTime time.Time) (time.Time, state
 
 /* ==================================================================================================== */
 
-func (s *Schedule) getDaysValues(referenceTime time.Time) []int {
+func (s *schedule) getDaysValues(referenceTime time.Time) []int {
 	min := referenceTime.AddDate(0, 0, -1*referenceTime.Day()+1)
 	max := min.AddDate(0, 1, -1)
 
@@ -319,7 +319,7 @@ func (s *Schedule) getDaysValues(referenceTime time.Time) []int {
 	return uniqueValues(append(domValues, dowValues...))
 }
 
-func (s *Schedule) getDaysValuesFromDoM(min, max time.Time) []int {
+func (s *schedule) getDaysValuesFromDoM(min, max time.Time) []int {
 	var values []int
 
 	for _, combi := range s.fields.dom.combinations {
@@ -385,7 +385,7 @@ func getDaysValuesFromDoMWeekday(pool []int, min, max time.Time) []int {
 
 /* ==================================================================================================== */
 
-func (s *Schedule) getDaysValuesFromDoW(min, max time.Time) []int {
+func (s *schedule) getDaysValuesFromDoW(min, max time.Time) []int {
 	var values []int
 
 	for _, combi := range s.fields.dow.combinations {
