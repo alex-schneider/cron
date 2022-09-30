@@ -117,3 +117,35 @@ The current implementation completes the fields as following:
 | `0 0 0 29 2 ? *`     | Run every February 29th on every leap year.                |
 | `0 0 R * * * *`      | Run once a day at a random hour.                           |
 | `0 0 2-6/R * * * *`  | Run once a day at a random hour between 2:00am and 6:00am. |
+
+## Code Example
+
+```go
+import "github.com/alex-schneider/cron"
+
+func main() {
+	ctx := context.Background()
+
+	ch, err := cron.NewJobCh(ctx, "@hourly")
+	if err != nil {
+		// Handle err
+	}
+
+myLoop:
+	for {
+		select {
+		case job := <-ch:
+			switch job.State {
+			case int(cron.StateFound):
+				go func() { /* ... */ }()  // Trigger some job...
+			case int(cron.StateNoMatches): // "* * * * * * 2021"
+				fallthrough
+			case int(cron.StateOnceExec):  // "@reboot"
+				break myLoop               // Handle an end of a job...
+			}
+		case <-ctx.Done():
+			/* ... */
+		}
+	}
+}
+```

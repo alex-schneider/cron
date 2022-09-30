@@ -30,7 +30,7 @@ type schedule struct {
 /* ==================================================================================================== */
 
 // NewJobCh parses the given expression spec and
-// returns a new communication read only channel.
+// returns a new read only communication channel.
 func NewJobCh(ctx context.Context, expression string) (<-chan *Job, error) {
 	fields, err := getFields(expression)
 	if err != nil {
