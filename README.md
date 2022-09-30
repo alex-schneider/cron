@@ -137,11 +137,11 @@ myLoop:
 		case job := <-ch:
 			switch job.State {
 			case int(cron.StateFound):
-				go func() { /* ... */ }()  // Trigger some job...
+				go func() { /* ... */ }() // Trigger some job...
 			case int(cron.StateNoMatches): // "* * * * * * 2021"
 				fallthrough
-			case int(cron.StateOnceExec):  // "@reboot"
-				break myLoop               // Handle an end of a job...
+			case int(cron.StateOnceExec): // "@reboot"
+				break myLoop // Handle an end of a job...
 			}
 		case <-ctx.Done():
 			/* ... */
