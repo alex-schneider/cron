@@ -115,6 +115,9 @@ func (s *schedule) run(nowFn func() time.Time) {
 					return
 				}
 
+				ticker.Stop()
+				ticker = time.NewTicker(next.Sub(now))
+
 				s.jobCh <- &Job{
 					Next:  next,
 					State: int(StateFound),
